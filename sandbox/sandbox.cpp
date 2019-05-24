@@ -135,17 +135,10 @@ struct SmartBatteryStatus
     /* ... */ char padding2[32];
 };
 static_assert(sizeof(SmartBatteryStatus) == 309);
-struct SmartBatteryStatusEx
-{
-    std::uint32_t size; // set to 64
-    char padding0[60];
-};
-static_assert(sizeof(SmartBatteryStatusEx) == 64);
 #pragma pack(pop)
 
 using SM_ChargeCapacityThresholdFunc = std::int32_t (__stdcall * )(std::int32_t batteryId, BatteryThresholdData* thresholdData);
 using SM_GetSmartBatteryStatusFunc = std::int16_t (__stdcall * )(std::int32_t batteryId, SmartBatteryStatus* batteryStatus);
-using SM_GetSmartBatteryStatusExFunc = std::int16_t (__stdcall * )(std::int32_t batteryId, SmartBatteryStatus* batteryStatus, SmartBatteryStatusEx* batteryStatusEx);
 
 
 struct ProgramArgs
@@ -227,7 +220,6 @@ private:
     SM_ChargeCapacityThresholdFunc setChargeCapacityStartThreshold_;
     SM_ChargeCapacityThresholdFunc getChargeCapacityStopThreshold_;
     SM_ChargeCapacityThresholdFunc setChargeCapacityStopThreshold_;
-    SM_GetSmartBatteryStatusExFunc getSmartBatteryStatusEx_;
     SM_GetSmartBatteryStatusFunc getSmartBatteryStatus_;
 
 public:
@@ -242,8 +234,6 @@ public:
         win32Assert(getChargeCapacityStopThreshold_ != NULL);
         setChargeCapacityStopThreshold_ = (SM_ChargeCapacityThresholdFunc) GetProcAddress(hLib_.handle(), "SM_SetChargeStopCapacityThreshold");
         win32Assert(setChargeCapacityStopThreshold_ != NULL);
-        getSmartBatteryStatusEx_ = (SM_GetSmartBatteryStatusExFunc) GetProcAddress(hLib_.handle(), "SM_GetSmartBatteryStatusEx");
-        win32Assert(getSmartBatteryStatusEx_!= NULL);
         getSmartBatteryStatus_ = (SM_GetSmartBatteryStatusFunc) GetProcAddress(hLib_.handle(), "SM_GetSmartBatteryStatus");
         win32Assert(getSmartBatteryStatus_!= NULL);
     }
@@ -281,15 +271,6 @@ public:
         status = { };
         status.size = sizeof(SmartBatteryStatus);
         auto result = getSmartBatteryStatus_(batteryId, &status);
-        return result == 0;
-    }
-    bool tryGetSmartBatteryStatusEx(std::int32_t batteryId, SmartBatteryStatus& status, SmartBatteryStatusEx& statusEx) const
-    {
-        status = { };
-        status.size = sizeof(SmartBatteryStatus);
-        statusEx = { };
-        statusEx.size = sizeof(SmartBatteryStatusEx);
-        auto result = getSmartBatteryStatusEx_(batteryId, &status, &statusEx);
         return result == 0;
     }
 };
