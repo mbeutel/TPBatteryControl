@@ -1,4 +1,5 @@
 
+#include <cmath>     // for abs()
 #include <ctime>     // for strftime()
 #include <array>
 #include <cstdint>   // for int16_t, [u]int32_t
@@ -359,7 +360,7 @@ void reportBatteryStatus(std::ostream& stream, const SmartBatteryStatus& status,
         stream << indent << "Number of charge/discharge cycles: " << status.cycleCount << '\n';
     if (status.canReportVoltage && status.canReportCurrent)
     {
-        stream << indent << "Power consumption: " << ((status.voltage * status.current) / 1000) << " mW\n";
+        stream << indent << "Power consumption: " << std::abs((((std::int32_t(status.voltage) / 10) * (status.current / 10)) / 10)) << " mW\n";
     }
     if (status.canReportVoltage)
     {
