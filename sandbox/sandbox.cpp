@@ -8,7 +8,7 @@
 #include <exception> // for terminate()
 #include <stdexcept> // for runtime_error()
 
-#include <gsl/gsl_assert>
+#include <gsl/gsl-lite.hpp>
 
 #include <clara.hpp>
 
@@ -145,6 +145,7 @@ struct ProgramArgs
 {
     bool setThreshold = false;
     bool detailed = false;
+    bool force = false;
     int batteryId = 0;
     int startThreshold = 0;
     int stopThreshold = 0;
@@ -156,6 +157,9 @@ clara::Parser makeCommandLineParser(ProgramArgs& args)
     return clara::Opt(args.setThreshold)
            ["-s"]["--set"]
            ("set battery threshold (calling without arguments prints charge thresholds of installed batteries)")
+         | clara::Opt(args.force)
+           ["-f"]["--force"]
+           ("force setting the battery thresholds even if the old and new values are identical")
          | clara::Opt(args.detailed)
            ["-d"]["--detailed"]
            ("print detailed battery info")
@@ -419,6 +423,19 @@ int run(ProgramArgs& args)
                 std::cerr << "charging stop threshold must be greater than charging start threshold\n";
                 return 1;
             }
+        }
+
+        if (args.startThreshold - 1 == oldStartThreshold && args.stopThreshold == oldStopThreshold && !args.force)
+        {
+            if (args.disableThresholds)
+            {
+                std::cout << "Charging thresholds for battery #" << args.batteryId << " already are disabled.\n";
+            }
+            else
+            {
+                std::cout << "Charging thresholds for battery #" << args.batteryId << " are already set to charge from " << args.startThreshold << "% to " << args.stopThreshold << "%\n";
+            }
+            return 0;
         }
 
         bool succeeded = smInterface.trySetThresholds(args.batteryId, args.startThreshold - 1, args.stopThreshold);
